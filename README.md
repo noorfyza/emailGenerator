@@ -1,2 +1,26 @@
-# emailGenerator
-This app is to derive an email of the user based on the domain he is working on.
+# Company Email Generator
+
+Pre-requisites:
+- node v18 or higher
+
+### Setup
+
+1. Run `npm i` to install the dependencies
+2. cd to /src & run: `npx ts-node server.ts`
+
+### Usage
+
+GET: localhost:3000/email?CompanyName={param1}&fullName={param2}
+
+response format (JSON): `{email: string}`
+
+### Example
+
+Req: localhost:3000/email?CompanyName=google&fullName=noorfaiza
+Res: `{"email":"faizanoor@google.com"}`
+
+**Note:** Currently supports known patterns present in emailGeneratorService's emailPatterns object
+
+### TODO
+
+read the file and contruct patterns object dynamically based on set rules of string variations.
