@@ -1,62 +1,82 @@
-// import { ConfigReader } from "../utils/configReader";
+import { ConfigReader } from "../utils/configReader";
 
 export class EmailGeneratorService {
-    // configReader: ConfigReader
-    emailPatterns: { [key: string]: string } = {
-        babbel: '{firstNameChar}{lastName}@babbel.com',
-        linkedin: '{firstName}{lastName}@linkedin.com',
-        google: '{lastName}{firstName}@google.com',
-        amazon: '{lastName}{firstNameChar}@amazon.com',
-    }
+    private configReader: ConfigReader
+    private emailConfig: { [key: string]: string }
+
+    private emailPatterns: { [key: string]: string } = {}
 
     constructor() {
-        // this.configReader = new ConfigReader();
+        this.configReader = new ConfigReader();
+        this.emailConfig = this.configReader.getConfig()
+        this.buildEmailPatternsFromConfig()
+        console.log(this.emailPatterns)
     }
 
-    readFileAndGetPattern(companyName: string): string {
-        const fs = require('fs');
-        var response:any;
-        fs.readFile('./assets/sampleEmails.json', 'utf8', (err: any,data: any) => {
-            if(err){
-                console.error(err);
-                return;
-            }
-        
-            const jsonData = JSON.parse(data);
-            const inputString = companyName+'.com';
-            console.log(inputString);
+    private buildEmailPatternsFromConfig() {
+        Object.entries(this.emailConfig)
+            .forEach(([fullName, emailAddress]) => {
+                const isValidEmailAddress = /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/.test(emailAddress)
 
-            var matchingPairs = Object.entries(jsonData).filter(([key, value]) => {
-                console.log(`value is = ${value}`);
-                console.log(`Keyy is = ${key}`);
-                let val = String(value).split('@')[1];
-                return val === inputString;
-            });
-            response = matchingPairs.length>0 ? matchingPairs[0] : "null";
-            console.log(`First response is :    ${response}`);
-        });
+                if (isValidEmailAddress) {
+                    const [domain, emailPattern] = this.determinePatternFrom(fullName, emailAddress)
+                    const companyName = domain.split('.')[0]
+                    this.emailPatterns[companyName] = emailPattern + '@' + domain
+                }
+                else {
+                    throw new Error(`the email address ${emailAddress} is invalid`)
+                }
 
-        console.log(`Response is : ${response}`);
-        return response;
+            })
     }
 
     generateEmailAddress(companyName: string, fullName: string): string | null {
-        let [firstName, lastName] = fullName.split(' ');
-        lastName ||= ' ';
+        const [firstName = '', lastName = ''] = fullName.split(' ');
+
         const normalizedCompanyName = companyName.replace(/\s/g, '').toLowerCase();
-        const findPattern = this.readFileAndGetPattern(companyName)
 
         if (this.emailPatterns.hasOwnProperty(normalizedCompanyName)) {
             const emailPattern = this.emailPatterns[normalizedCompanyName];
             const emailAddress = emailPattern
-                .replace('{firstNameChar}', firstName[0].toLowerCase())
-                .replace('{lastNameChar}', lastName[0].toLowerCase())
+                .replace('{firstNameChar}', firstName[0]?.toLowerCase() || '')
+                .replace('{lastNameChar}', lastName[0]?.toLowerCase() || '')
                 .replace('{firstName}', firstName.toLowerCase())
-                .replace('{lastName}', lastName.toLowerCase());
+                .replace('{lastName}', lastName.toLowerCase() || '');
 
             return emailAddress;
         }
 
         return null;
+    }
+
+    private determinePatternFrom(fullName: string, emailAddress: string): [string, string] {
+
+        const [firstName = '', lastName = ''] = fullName.split(' ')
+        const [firstNameChar, lastNameChar] = [firstName[0], lastName[0]]
+        let [address = '', domain = ''] = emailAddress.split('@')
+        let emailPattern = address.toLowerCase().replace(firstName.toLowerCase(), '{firstName}')
+        if (lastName)
+            emailPattern = emailPattern.replace(lastName.toLowerCase(), '{lastName}')
+
+        const partitionedEmailPattern = emailPattern.match(/\{*[^{}]+\}*/g)
+
+        partitionedEmailPattern?.forEach((subPattern, index) => {
+            partitionedEmailPattern[index] =
+                subPattern.startsWith('{') ?
+                    subPattern :
+                    this.replaceInitialWithPattern(subPattern, firstNameChar, lastNameChar)
+        })
+
+
+        return [domain, partitionedEmailPattern?.join('') || ''];
+    }
+
+    private replaceInitialWithPattern(subString: string, firstNameChar: string, lastNameChar: string): string {
+        if (firstNameChar.toLowerCase() == subString)
+            return '{firstNameChar}'
+        else if (lastNameChar.toLowerCase() == subString)
+            return '{lastNameChar}'
+        else
+            return subString
     }
 }

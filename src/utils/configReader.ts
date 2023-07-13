@@ -2,11 +2,10 @@ import { readFile } from 'fs/promises';
 
 export class ConfigReader {
     readonly CONFIG_FILE_PATH = '../assets/sampleEmails.json'
-    private fileContent;
-    private configJSON;
+    // private fileContent;
+    private configJSON: { [key: string]: string } = {}
     constructor() {
-        this.fileContent = readFile(this.CONFIG_FILE_PATH, 'utf-8')
-        this.configJSON = JSON.parse(this.fileContent)
+        this.configJSON = require(this.CONFIG_FILE_PATH)
     }
 
     getConfig(): { [key: string]: string } {

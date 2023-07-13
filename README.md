@@ -10,13 +10,13 @@ Pre-requisites:
 
 ### Usage
 
-GET: localhost:3000/email?CompanyName={param1}&fullName={param2}
+GET: localhost:3000/email?companyName={param1}&fullName={param2}
 
 response format (JSON): `{email: string}`
 
 ### Example
 
-Req: localhost:3000/email?CompanyName=google&fullName=noorfaiza
+Req: localhost:3000/email?companyName=google&fullName=noor%20faiza
 Res: `{"email":"faizanoor@google.com"}`
 
 **Note:** Currently supports known patterns present in emailGeneratorService's emailPatterns object
